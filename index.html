@@ -1,0 +1,2225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1e1b4b">
+    <meta name="format-detection" content="telephone=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>ERP Lead Management</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <style>
+        /* Critical inline styles for first paint */
+        body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .loading-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #1e1b4b, #312e81); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .loading-spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <!-- PWA Install Banner -->
+    <div class="pwa-banner" id="pwaBanner">
+        <div class="pwa-banner-content">
+            <i class="fas fa-mobile-alt"></i>
+            <span>Install LeadFlow for offline access</span>
+        </div>
+        <div class="pwa-banner-actions">
+            <button class="btn btn-sm btn-outline" id="pwaDismiss">Later</button>
+            <button class="btn btn-sm btn-primary" id="pwaInstall">Install</button>
+        </div>
+    </div>
+
+    <!-- Offline Indicator -->
+    <div class="offline-indicator" id="offlineIndicator">
+        <i class="fas fa-wifi-slash"></i> You're offline. Changes will sync when reconnected.
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon"><i class="fas fa-bolt"></i></div>
+                    <span class="logo-text">LeadFlow</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="leads">
+                    <i class="fas fa-users"></i>
+                    <span>Leads</span>
+                </a>
+                <a href="#" class="nav-item" data-page="pipeline">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>Pipeline</span>
+                </a>
+                <a href="#" class="nav-item" data-page="followups">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Follow-Ups</span>
+                </a>
+                <a href="#" class="nav-item" data-page="communications">
+                    <i class="fas fa-comments"></i>
+                    <span>Communications</span>
+                </a>
+                <a href="#" class="nav-item" data-page="documents">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Documents</span>
+                </a>
+                <a href="#" class="nav-item" data-page="reports">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="#" class="nav-item" data-page="formbuilder">
+                    <i class="fas fa-wpforms"></i>
+                    <span>Form Builder</span>
+                </a>
+                <a href="#" class="nav-item" data-page="integrations">
+                    <i class="fas fa-plug"></i>
+                    <span>Integrations</span>
+                </a>
+                <a href="#" class="nav-item" data-page="auditlog">
+                    <i class="fas fa-history"></i>
+                    <span>Audit Log</span>
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-card">
+                    <div class="user-avatar">AJ</div>
+                    <div class="user-info">
+                        <span class="user-name">Admin User</span>
+                        <span class="user-role">Administrator</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search leads, contacts, companies..." id="globalSearch">
+                        <div class="search-results" id="searchResults"></div>
+                    </div>
+                </div>
+                <div class="top-bar-right">
+                    <div class="currency-selector">
+                        <select id="currencySelect">
+                            <option value="USD">$ USD</option>
+                            <option value="EUR">€ EUR</option>
+                            <option value="GBP">£ GBP</option>
+                            <option value="INR">₹ INR</option>
+                        </select>
+                    </div>
+                    <button class="icon-btn" id="themeToggle" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="icon-btn notification-btn" id="notificationBtn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notifBadge">3</span>
+                    </button>
+                    <button class="icon-btn fullscreen-btn" id="fullscreenBtn">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Notification Panel -->
+            <div class="notification-panel" id="notifPanel">
+                <div class="notif-header">
+                    <h3>Notifications</h3>
+                    <button class="text-btn" id="clearNotifs">Clear All</button>
+                </div>
+                <div class="notif-list" id="notifList">
+                    <div class="notif-item unread">
+                        <div class="notif-icon bg-blue"><i class="fas fa-user-plus"></i></div>
+                        <div class="notif-content">
+                            <p>New lead <strong>Acme Corp</strong> assigned to you</p>
+                            <span class="notif-time">5 min ago</span>
+                        </div>
+                    </div>
+                    <div class="notif-item unread">
+                        <div class="notif-icon bg-orange"><i class="fas fa-clock"></i></div>
+                        <div class="notif-content">
+                            <p>Follow-up due with <strong>Tech Solutions</strong></p>
+                            <span class="notif-time">1 hour ago</span>
+                        </div>
+                    </div>
+                    <div class="notif-item unread">
+                        <div class="notif-icon bg-green"><i class="fas fa-check-circle"></i></div>
+                        <div class="notif-content">
+                            <p>Lead <strong>Innovate Inc</strong> converted to customer</p>
+                            <span class="notif-time">3 hours ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Content -->
+            <div class="page-content">
+                <!-- Dashboard Page -->
+                <div class="page active" id="page-dashboard">
+                    <div class="page-header">
+                        <div>
+                            <h1>Dashboard</h1>
+                            <p class="page-subtitle">Welcome back! Here's your sales overview.</p>
+                        </div>
+                        <div class="page-actions">
+                            <select class="filter-select" id="dashPeriod">
+                                <option>This Month</option>
+                                <option>Last Month</option>
+                                <option>This Quarter</option>
+                                <option>This Year</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-blue"><i class="fas fa-users"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Total Leads</span>
+                                <span class="stat-value" id="statTotal">248</span>
+                                <span class="stat-change positive"><i class="fas fa-arrow-up"></i> 12.5%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-cyan"><i class="fas fa-hourglass-half"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Open Leads</span>
+                                <span class="stat-value" id="statOpen">156</span>
+                                <span class="stat-change negative"><i class="fas fa-arrow-down"></i> 3.2%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-green"><i class="fas fa-trophy"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Won Leads</span>
+                                <span class="stat-value" id="statWon">64</span>
+                                <span class="stat-change positive"><i class="fas fa-arrow-up"></i> 8.1%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-red"><i class="fas fa-times-circle"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Lost Leads</span>
+                                <span class="stat-value" id="statLost">28</span>
+                                <span class="stat-change positive"><i class="fas fa-arrow-down"></i> 5.4%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-card-wide">
+                            <div class="stat-icon-lg bg-purple"><i class="fas fa-percentage"></i></div>
+                            <div class="stat-info-lg">
+                                <span class="stat-label">Conversion Ratio</span>
+                                <span class="stat-value-lg">25.8%</span>
+                                <div class="progress-bar"><div class="progress-fill" style="width: 25.8%"></div></div>
+                            </div>
+                        </div>
+                        <div class="stat-card-wide">
+                            <div class="stat-icon-lg bg-orange"><i class="fas fa-dollar-sign"></i></div>
+                            <div class="stat-info-lg">
+                                <span class="stat-label">Revenue Forecast</span>
+                                <span class="stat-value-lg" id="revenueForecast">$1.24M</span>
+                                <div class="progress-bar"><div class="progress-fill orange" style="width: 62%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Goal Tracking -->
+                    <div class="card mb-24">
+                        <div class="card-header">
+                            <h3><i class="fas fa-bullseye"></i> Goal Tracking</h3>
+                            <button class="btn btn-sm btn-outline" id="editGoalBtn"><i class="fas fa-edit"></i> Edit Goals</button>
+                        </div>
+                        <div class="goals-container" id="goalsContainer">
+                            <div class="goal-item">
+                                <div class="goal-info">
+                                    <span class="goal-title">Monthly Leads Target</span>
+                                    <span class="goal-progress-text">186 / 200</span>
+                                </div>
+                                <div class="goal-bar"><div class="goal-fill bg-blue" style="width: 93%"></div></div>
+                                <span class="goal-percentage">93%</span>
+                            </div>
+                            <div class="goal-item">
+                                <div class="goal-info">
+                                    <span class="goal-title">Revenue Target</span>
+                                    <span class="goal-progress-text">$1.24M / $2M</span>
+                                </div>
+                                <div class="goal-bar"><div class="goal-fill bg-green" style="width: 62%"></div></div>
+                                <span class="goal-percentage">62%</span>
+                            </div>
+                            <div class="goal-item">
+                                <div class="goal-info">
+                                    <span class="goal-title">Conversion Rate Target</span>
+                                    <span class="goal-progress-text">25.8% / 30%</span>
+                                </div>
+                                <div class="goal-bar"><div class="goal-fill bg-purple" style="width: 86%"></div></div>
+                                <span class="goal-percentage">86%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lead Scoring Widget -->
+                    <div class="dashboard-grid">
+                        <div class="card chart-card">
+                            <div class="card-header">
+                                <h3>Lead Trends</h3>
+                                <div class="chart-tabs">
+                                    <button class="chart-tab active" data-chart="monthly">Monthly</button>
+                                    <button class="chart-tab" data-chart="weekly">Weekly</button>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="leadTrendsChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-star"></i> Top Leads by Score</h3>
+                            </div>
+                            <div class="lead-score-list" id="leadScoreList">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Lead Sources</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="leadSourcesChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Performance</h3>
+                            </div>
+                            <div class="performance-list" id="performanceList">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Recent Leads</h3>
+                            <a href="#" class="view-all" data-page="leads">View All <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Lead</th>
+                                        <th>Company</th>
+                                        <th>Status</th>
+                                        <th>Score</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentLeadsTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Upcoming Follow-Ups</h3>
+                            <a href="#" class="view-all" data-page="followups">View All <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Contact</th>
+                                        <th>Company</th>
+                                        <th>Type</th>
+                                        <th>Priority</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="upcomingFollowUps">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leads Page -->
+                <div class="page" id="page-leads">
+                    <div class="page-header">
+                        <div>
+                            <h1>Leads</h1>
+                            <p class="page-subtitle">Manage all your leads in one place.</p>
+                        </div>
+                        <div class="page-actions">
+                            <button class="btn btn-outline" id="importLeadsBtn"><i class="fas fa-file-import"></i> Import</button>
+                            <button class="btn btn-outline" id="exportLeadsBtn"><i class="fas fa-download"></i> Export</button>
+                            <button class="btn btn-primary" id="addLeadBtn"><i class="fas fa-plus"></i> New Lead</button>
+                        </div>
+                    </div>
+
+                    <!-- Saved Filters -->
+                    <div class="saved-filters" id="savedFilters">
+                        <span class="saved-filter-label">Saved Filters:</span>
+                        <button class="saved-filter-chip active" data-filter="all">All Leads</button>
+                        <button class="saved-filter-chip" data-filter="my-leads">My Leads</button>
+                        <button class="saved-filter-chip" data-filter="hot">Hot Leads</button>
+                        <button class="saved-filter-chip" data-filter="new-today">New Today</button>
+                        <button class="saved-filter-chip" data-filter="no-followup">No Follow-Up</button>
+                        <button class="saved-filter-chip" id="saveFilterBtn"><i class="fas fa-plus"></i> Save Filter</button>
+                    </div>
+
+                    <div class="filters-bar">
+                        <div class="filter-group">
+                            <select class="filter-select" id="filterStatus">
+                                <option value="">All Status</option>
+                                <option value="new">New Lead</option>
+                                <option value="contacted">Contacted</option>
+                                <option value="qualified">Qualified</option>
+                                <option value="proposal">Proposal Sent</option>
+                                <option value="negotiation">Negotiation</option>
+                                <option value="won">Won</option>
+                                <option value="lost">Lost</option>
+                            </select>
+                            <select class="filter-select" id="filterPriority">
+                                <option value="">All Priority</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                            <select class="filter-select" id="filterSource">
+                                <option value="">All Sources</option>
+                                <option value="website">Website</option>
+                                <option value="referral">Referral</option>
+                                <option value="ads">Ads</option>
+                                <option value="social">Social Media</option>
+                                <option value="cold-call">Cold Call</option>
+                            </select>
+                            <input type="date" class="filter-select" id="filterDateFrom" placeholder="From">
+                            <input type="date" class="filter-select" id="filterDateTo" placeholder="To">
+                        </div>
+                        <div class="filter-group">
+                            <div class="search-box small">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="Search..." id="leadSearch">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bulk Actions Bar -->
+                    <div class="bulk-actions" id="bulkActions" style="display:none">
+                        <span class="bulk-count"><span id="selectedCount">0</span> leads selected</span>
+                        <button class="btn btn-sm btn-outline" id="bulkAssign"><i class="fas fa-user-plus"></i> Assign</button>
+                        <button class="btn btn-sm btn-outline" id="bulkStatus"><i class="fas fa-exchange-alt"></i> Change Status</button>
+                        <button class="btn btn-sm btn-outline" id="bulkDelete"><i class="fas fa-trash"></i> Delete</button>
+                        <button class="btn btn-sm btn-outline" id="bulkExport"><i class="fas fa-download"></i> Export</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" class="custom-checkbox" id="selectAll"></th>
+                                        <th>Lead No</th>
+                                        <th>Company</th>
+                                        <th>Contact</th>
+                                        <th>Phone</th>
+                                        <th>Source</th>
+                                        <th>Score</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Assigned To</th>
+                                        <th>Budget</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leadsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-footer">
+                            <span class="table-info">Showing <strong>1-10</strong> of <strong>248</strong> leads</span>
+                            <div class="pagination" id="leadsPagination">
+                                <button class="page-btn" disabled><i class="fas fa-chevron-left"></i></button>
+                                <button class="page-btn active">1</button>
+                                <button class="page-btn">2</button>
+                                <button class="page-btn">3</button>
+                                <button class="page-btn">...</button>
+                                <button class="page-btn">25</button>
+                                <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pipeline Page -->
+                <div class="page" id="page-pipeline">
+                    <div class="page-header">
+                        <div>
+                            <h1>Sales Pipeline</h1>
+                            <p class="page-subtitle">Visualize your sales workflow and track progress.</p>
+                        </div>
+                        <div class="page-actions">
+                            <select class="filter-select" id="pipelineFilter">
+                                <option value="">All Executives</option>
+                                <option>Sarah Johnson</option>
+                                <option>Mike Chen</option>
+                                <option>Emily Davis</option>
+                                <option>James Wilson</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pipeline-container" id="pipelineContainer">
+                        <!-- Pipeline columns rendered dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- Follow-Ups Page -->
+                <div class="page" id="page-followups">
+                    <div class="page-header">
+                        <div>
+                            <h1>Follow-Ups</h1>
+                            <p class="page-subtitle">Track and manage all your follow-up activities.</p>
+                        </div>
+                        <div class="page-actions">
+                            <button class="btn btn-outline" id="calendarViewBtn"><i class="fas fa-calendar"></i> Calendar View</button>
+                            <button class="btn btn-primary" id="addFollowUpBtn"><i class="fas fa-plus"></i> New Follow-Up</button>
+                        </div>
+                    </div>
+
+                    <div class="followup-tabs">
+                        <button class="followup-tab active" data-tab="upcoming">Upcoming</button>
+                        <button class="followup-tab" data-tab="today">Today</button>
+                        <button class="followup-tab" data-tab="overdue">Overdue</button>
+                        <button class="followup-tab" data-tab="completed">Completed</button>
+                    </div>
+
+                    <!-- Calendar View (Hidden by default) -->
+                    <div class="calendar-view" id="calendarView" style="display:none">
+                        <div class="calendar-header">
+                            <button class="btn btn-sm btn-outline" id="calPrev"><i class="fas fa-chevron-left"></i></button>
+                            <h3 id="calMonth">June 2024</h3>
+                            <button class="btn btn-sm btn-outline" id="calNext"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar-grid" id="calendarGrid">
+                        </div>
+                    </div>
+
+                    <div class="card" id="followupTableCard">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" class="custom-checkbox"></th>
+                                        <th>Date</th>
+                                        <th>Next Follow-Up</th>
+                                        <th>Contact</th>
+                                        <th>Company</th>
+                                        <th>Type</th>
+                                        <th>Outcome</th>
+                                        <th>Priority</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="followUpsTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Communications Page -->
+                <div class="page" id="page-communications">
+                    <div class="page-header">
+                        <div>
+                            <h1>Communications</h1>
+                            <p class="page-subtitle">Manage all emails, SMS, and call logs.</p>
+                        </div>
+                        <div class="page-actions">
+                            <button class="btn btn-outline" id="logCallBtn"><i class="fas fa-phone"></i> Log Call</button>
+                            <button class="btn btn-outline" id="sendSmsBtn"><i class="fas fa-sms"></i> Send SMS</button>
+                            <button class="btn btn-primary" id="sendEmailBtn"><i class="fas fa-envelope"></i> Send Email</button>
+                        </div>
+                    </div>
+
+                    <div class="comm-tabs">
+                        <button class="comm-tab active" data-tab="all">All</button>
+                        <button class="comm-tab" data-tab="email">Email</button>
+                        <button class="comm-tab" data-tab="sms">SMS</button>
+                        <button class="comm-tab" data-tab="call">Calls</button>
+                        <button class="comm-tab" data-tab="meeting">Meetings</button>
+                    </div>
+
+                    <div class="comm-timeline" id="commTimeline">
+                        <div class="comm-item">
+                            <div class="comm-icon bg-blue"><i class="fas fa-envelope"></i></div>
+                            <div class="comm-content">
+                                <div class="comm-header">
+                                    <strong>Email to Acme Corp</strong>
+                                    <span class="comm-time">2 hours ago</span>
+                                </div>
+                                <p>Subject: Proposal for ERP Implementation</p>
+                                <div class="comm-status"><span class="status-badge status-qualified">Delivered</span></div>
+                            </div>
+                        </div>
+                        <div class="comm-item">
+                            <div class="comm-icon bg-green"><i class="fas fa-phone"></i></div>
+                            <div class="comm-content">
+                                <div class="comm-header">
+                                    <strong>Call with Tech Solutions</strong>
+                                    <span class="comm-time">5 hours ago</span>
+                                </div>
+                                <p>Duration: 15 minutes - Discussed pricing</p>
+                                <div class="comm-status"><span class="status-badge status-won">Completed</span></div>
+                            </div>
+                        </div>
+                        <div class="comm-item">
+                            <div class="comm-icon bg-purple"><i class="fas fa-sms"></i></div>
+                            <div class="comm-content">
+                                <div class="comm-header">
+                                    <strong>SMS to Innovate Inc</strong>
+                                    <span class="comm-time">Yesterday</span>
+                                </div>
+                                <p>Meeting confirmation for tomorrow at 10 AM</p>
+                                <div class="comm-status"><span class="status-badge status-contacted">Sent</span></div>
+                            </div>
+                        </div>
+                        <div class="comm-item">
+                            <div class="comm-icon bg-orange"><i class="fas fa-users"></i></div>
+                            <div class="comm-content">
+                                <div class="comm-header">
+                                    <strong>Meeting with Global Systems</strong>
+                                    <span class="comm-time">2 days ago</span>
+                                </div>
+                                <p>Product demo and requirements gathering</p>
+                                <div class="comm-status"><span class="status-badge status-won">Completed</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents Page -->
+                <div class="page" id="page-documents">
+                    <div class="page-header">
+                        <div>
+                            <h1>Documents</h1>
+                            <p class="page-subtitle">Manage proposals, contracts, and templates.</p>
+                        </div>
+                        <div class="page-actions">
+                            <button class="btn btn-outline" id="docTemplateBtn"><i class="fas fa-file-word"></i> Templates</button>
+                            <button class="btn btn-primary" id="uploadDocBtn"><i class="fas fa-upload"></i> Upload</button>
+                        </div>
+                    </div>
+
+                    <div class="doc-grid">
+                        <div class="doc-card">
+                            <div class="doc-icon bg-blue"><i class="fas fa-file-pdf"></i></div>
+                            <div class="doc-info">
+                                <h4>ERP_Proposal_Acme.pdf</h4>
+                                <p>2.4 MB • Modified 2 days ago</p>
+                            </div>
+                            <div class="doc-actions">
+                                <button class="action-btn" title="Download"><i class="fas fa-download"></i></button>
+                                <button class="action-btn" title="Share"><i class="fas fa-share"></i></button>
+                                <button class="action-btn danger" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="doc-card">
+                            <div class="doc-icon bg-green"><i class="fas fa-file-excel"></i></div>
+                            <div class="doc-info">
+                                <h4>Pricing_Sheet_Q4.xlsx</h4>
+                                <p>1.1 MB • Modified 5 days ago</p>
+                            </div>
+                            <div class="doc-actions">
+                                <button class="action-btn" title="Download"><i class="fas fa-download"></i></button>
+                                <button class="action-btn" title="Share"><i class="fas fa-share"></i></button>
+                                <button class="action-btn danger" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="doc-card">
+                            <div class="doc-icon bg-purple"><i class="fas fa-file-contract"></i></div>
+                            <div class="doc-info">
+                                <h4>Contract_Template.docx</h4>
+                                <p>856 KB • Modified 1 week ago</p>
+                            </div>
+                            <div class="doc-actions">
+                                <button class="action-btn" title="Download"><i class="fas fa-download"></i></button>
+                                <button class="action-btn" title="Share"><i class="fas fa-share"></i></button>
+                                <button class="action-btn danger" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="doc-card">
+                            <div class="doc-icon bg-orange"><i class="fas fa-file-powerpoint"></i></div>
+                            <div class="doc-info">
+                                <h4>Product_Demo.pptx</h4>
+                                <p>5.2 MB • Modified 2 weeks ago</p>
+                            </div>
+                            <div class="doc-actions">
+                                <button class="action-btn" title="Download"><i class="fas fa-download"></i></button>
+                                <button class="action-btn" title="Share"><i class="fas fa-share"></i></button>
+                                <button class="action-btn danger" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top:24px">
+                        <div class="card-header">
+                            <h3>Document Templates</h3>
+                        </div>
+                        <div class="template-grid" id="templateGrid">
+                            <div class="template-card">
+                                <div class="template-preview"><i class="fas fa-file-alt"></i></div>
+                                <span>Proposal Template</span>
+                            </div>
+                            <div class="template-card">
+                                <div class="template-preview"><i class="fas fa-file-contract"></i></div>
+                                <span>Contract Template</span>
+                            </div>
+                            <div class="template-card">
+                                <div class="template-preview"><i class="fas fa-file-invoice"></i></div>
+                                <span>Invoice Template</span>
+                            </div>
+                            <div class="template-card">
+                                <div class="template-preview"><i class="fas fa-file-signature"></i></div>
+                                <span>Quote Template</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Page -->
+                <div class="page" id="page-reports">
+                    <div class="page-header">
+                        <div>
+                            <h1>Reports & Analytics</h1>
+                            <p class="page-subtitle">Gain insights into your sales performance.</p>
+                        </div>
+                        <div class="page-actions">
+                            <select class="filter-select" id="reportPeriod">
+                                <option>This Month</option>
+                                <option>Last Month</option>
+                                <option>This Quarter</option>
+                                <option>This Year</option>
+                            </select>
+                            <button class="btn btn-outline" id="reportBuilderBtn"><i class="fas fa-cogs"></i> Report Builder</button>
+                            <button class="btn btn-outline"><i class="fas fa-download"></i> Export Report</button>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-blue"><i class="fas fa-chart-line"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Avg. Deal Size</span>
+                                <span class="stat-value">$18,400</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-green"><i class="fas fa-handshake"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Win Rate</span>
+                                <span class="stat-value">68.5%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-purple"><i class="fas fa-clock"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Avg. Sales Cycle</span>
+                                <span class="stat-value">32 days</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-orange"><i class="fas fa-phone"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Calls Today</span>
+                                <span class="stat-value">24</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scheduled Reports -->
+                    <div class="card mb-24">
+                        <div class="card-header">
+                            <h3><i class="fas fa-clock"></i> Scheduled Reports</h3>
+                            <button class="btn btn-sm btn-outline" id="scheduleReportBtn"><i class="fas fa-plus"></i> Schedule</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Report Name</th>
+                                        <th>Frequency</th>
+                                        <th>Recipients</th>
+                                        <th>Next Run</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Weekly Sales Summary</strong></td>
+                                        <td>Weekly (Monday)</td>
+                                        <td>admin@company.com</td>
+                                        <td>Jun 24, 2024</td>
+                                        <td><span class="status-badge status-won">Active</span></td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Monthly Revenue Report</strong></td>
+                                        <td>Monthly (1st)</td>
+                                        <td>admin@company.com, manager@company.com</td>
+                                        <td>Jul 1, 2024</td>
+                                        <td><span class="status-badge status-won">Active</span></td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="card chart-card">
+                            <div class="card-header">
+                                <h3>Revenue by Month</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="revenueChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="card chart-card">
+                            <div class="card-header">
+                                <h3>Leads by Status</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Executive Performance</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Executive</th>
+                                        <th>Leads Assigned</th>
+                                        <th>Leads Won</th>
+                                        <th>Win Rate</th>
+                                        <th>Revenue</th>
+                                        <th>Avg. Cycle</th>
+                                        <th>Rating</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="execPerformanceTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="card chart-card">
+                            <div class="card-header">
+                                <h3>Lead Sources Distribution</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="sourcesPieChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="card chart-card">
+                            <div class="card-header">
+                                <h3>Conversion Funnel</h3>
+                            </div>
+                            <div class="funnel-container" id="conversionFunnel">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Builder Page -->
+                <div class="page" id="page-formbuilder">
+                    <div class="page-header">
+                        <div>
+                            <h1>Lead Capture Form Builder</h1>
+                            <p class="page-subtitle">Create custom forms to capture leads from your website.</p>
+                        </div>
+                        <div class="page-actions">
+                            <button class="btn btn-outline" id="formPreviewBtn"><i class="fas fa-eye"></i> Preview</button>
+                            <button class="btn btn-primary" id="saveFormBtn"><i class="fas fa-save"></i> Save Form</button>
+                        </div>
+                    </div>
+
+                    <div class="formbuilder-grid">
+                        <div class="card formbuilder-canvas">
+                            <div class="card-header">
+                                <h3>Form Editor</h3>
+                            </div>
+                            <div class="formbuilder-area" id="formbuilderArea">
+                                <div class="formbuilder-field" draggable="true" data-type="text">
+                                    <div class="field-drag"><i class="fas fa-grip-vertical"></i></div>
+                                    <div class="field-config">
+                                        <label>Company Name</label>
+                                        <input type="text" placeholder="Enter company name" disabled>
+                                    </div>
+                                    <button class="field-remove"><i class="fas fa-times"></i></button>
+                                </div>
+                                <div class="formbuilder-field" draggable="true" data-type="text">
+                                    <div class="field-drag"><i class="fas fa-grip-vertical"></i></div>
+                                    <div class="field-config">
+                                        <label>Contact Person</label>
+                                        <input type="text" placeholder="Enter contact name" disabled>
+                                    </div>
+                                    <button class="field-remove"><i class="fas fa-times"></i></button>
+                                </div>
+                                <div class="formbuilder-field" draggable="true" data-type="email">
+                                    <div class="field-drag"><i class="fas fa-grip-vertical"></i></div>
+                                    <div class="field-config">
+                                        <label>Email Address</label>
+                                        <input type="email" placeholder="Enter email" disabled>
+                                    </div>
+                                    <button class="field-remove"><i class="fas fa-times"></i></button>
+                                </div>
+                                <div class="formbuilder-field" draggable="true" data-type="tel">
+                                    <div class="field-drag"><i class="fas fa-grip-vertical"></i></div>
+                                    <div class="field-config">
+                                        <label>Phone Number</label>
+                                        <input type="tel" placeholder="Enter phone" disabled>
+                                    </div>
+                                    <button class="field-remove"><i class="fas fa-times"></i></button>
+                                </div>
+                                <div class="formbuilder-field" draggable="true" data-type="select">
+                                    <div class="field-drag"><i class="fas fa-grip-vertical"></i></div>
+                                    <div class="field-config">
+                                        <label>Lead Source</label>
+                                        <select disabled><option>Select source</option></select>
+                                    </div>
+                                    <button class="field-remove"><i class="fas fa-times"></i></button>
+                                </div>
+                                <div class="formbuilder-field" draggable="true" data-type="textarea">
+                                    <div class="field-drag"><i class="fas fa-grip-vertical"></i></div>
+                                    <div class="field-config">
+                                        <label>Requirements</label>
+                                        <textarea placeholder="Describe your requirements" disabled></textarea>
+                                    </div>
+                                    <button class="field-remove"><i class="fas fa-times"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card formbuilder-sidebar">
+                            <div class="card-header">
+                                <h3>Form Fields</h3>
+                            </div>
+                            <div class="field-palette">
+                                <div class="palette-section">
+                                    <h4>Basic Fields</h4>
+                                    <div class="palette-items">
+                                        <div class="palette-item" data-type="text"><i class="fas fa-font"></i> Text Input</div>
+                                        <div class="palette-item" data-type="email"><i class="fas fa-envelope"></i> Email</div>
+                                        <div class="palette-item" data-type="tel"><i class="fas fa-phone"></i> Phone</div>
+                                        <div class="palette-item" data-type="number"><i class="fas fa-hashtag"></i> Number</div>
+                                        <div class="palette-item" data-type="textarea"><i class="fas fa-align-left"></i> Textarea</div>
+                                    </div>
+                                </div>
+                                <div class="palette-section">
+                                    <h4>Selection Fields</h4>
+                                    <div class="palette-items">
+                                        <div class="palette-item" data-type="select"><i class="fas fa-chevron-down"></i> Dropdown</div>
+                                        <div class="palette-item" data-type="radio"><i class="fas fa-circle-dot"></i> Radio</div>
+                                        <div class="palette-item" data-type="checkbox"><i class="fas fa-check-square"></i> Checkbox</div>
+                                    </div>
+                                </div>
+                                <div class="palette-section">
+                                    <h4>Advanced</h4>
+                                    <div class="palette-items">
+                                        <div class="palette-item" data-type="date"><i class="fas fa-calendar"></i> Date Picker</div>
+                                        <div class="palette-item" data-type="file"><i class="fas fa-paperclip"></i> File Upload</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-header" style="margin-top:16px">
+                                <h3>Form Settings</h3>
+                            </div>
+                            <div class="form-settings">
+                                <div class="form-group">
+                                    <label>Form Title</label>
+                                    <input type="text" class="form-input" value="Contact Us" id="formTitle">
+                                </div>
+                                <div class="form-group">
+                                    <label>Submit Button Text</label>
+                                    <input type="text" class="form-input" value="Submit" id="formSubmitText">
+                                </div>
+                                <div class="form-group">
+                                    <label>Redirect URL (after submit)</label>
+                                    <input type="url" class="form-input" placeholder="https://..." id="formRedirect">
+                                </div>
+                                <div class="form-group">
+                                    <label class="toggle-label">
+                                        <input type="checkbox" checked id="formNotif"> Send notification on submission
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="card-header" style="margin-top:16px">
+                                <h3>QR Code</h3>
+                            </div>
+                            <div class="qr-section">
+                                <div class="qr-code" id="qrCode">
+                                    <div class="qr-placeholder">
+                                        <i class="fas fa-qrcode"></i>
+                                        <p>Generate QR Code</p>
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm btn-outline" id="generateQrBtn" style="width:100%"><i class="fas fa-qrcode"></i> Generate QR Code</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Integrations Page -->
+                <div class="page" id="page-integrations">
+                    <div class="page-header">
+                        <div>
+                            <h1>Integrations</h1>
+                            <p class="page-subtitle">Connect with your favorite tools and services.</p>
+                        </div>
+                    </div>
+
+                    <div class="integrations-grid">
+                        <div class="integration-card connected">
+                            <div class="integration-icon"><i class="fab fa-google"></i></div>
+                            <h4>Google Calendar</h4>
+                            <p>Sync meetings and events</p>
+                            <span class="integration-status connected"><i class="fas fa-check-circle"></i> Connected</span>
+                            <button class="btn btn-sm btn-outline">Configure</button>
+                        </div>
+                        <div class="integration-card connected">
+                            <div class="integration-icon"><i class="fab fa-microsoft"></i></div>
+                            <h4>Microsoft Outlook</h4>
+                            <p>Email and calendar sync</p>
+                            <span class="integration-status connected"><i class="fas fa-check-circle"></i> Connected</span>
+                            <button class="btn btn-sm btn-outline">Configure</button>
+                        </div>
+                        <div class="integration-card">
+                            <div class="integration-icon"><i class="fab fa-slack"></i></div>
+                            <h4>Slack</h4>
+                            <p>Team notifications</p>
+                            <span class="integration-status"><i class="fas fa-plus-circle"></i> Not Connected</span>
+                            <button class="btn btn-sm btn-primary">Connect</button>
+                        </div>
+                        <div class="integration-card">
+                            <div class="integration-icon"><i class="fab fa-hubspot"></i></div>
+                            <h4>HubSpot</h4>
+                            <p>CRM data sync</p>
+                            <span class="integration-status"><i class="fas fa-plus-circle"></i> Not Connected</span>
+                            <button class="btn btn-sm btn-primary">Connect</button>
+                        </div>
+                        <div class="integration-card">
+                            <div class="integration-icon"><i class="fab fa-salesforce"></i></div>
+                            <h4>Salesforce</h4>
+                            <p>Lead import/export</p>
+                            <span class="integration-status"><i class="fas fa-plus-circle"></i> Not Connected</span>
+                            <button class="btn btn-sm btn-primary">Connect</button>
+                        </div>
+                        <div class="integration-card">
+                            <div class="integration-icon"><i class="fab fa-stripe"></i></div>
+                            <h4>Stripe</h4>
+                            <p>Payment processing</p>
+                            <span class="integration-status"><i class="fas fa-plus-circle"></i> Not Connected</span>
+                            <button class="btn btn-sm btn-primary">Connect</button>
+                        </div>
+                        <div class="integration-card">
+                            <div class="integration-icon"><i class="fas fa-envelope-open-text"></i></div>
+                            <h4>Mailchimp</h4>
+                            <p>Email marketing</p>
+                            <span class="integration-status"><i class="fas fa-plus-circle"></i> Not Connected</span>
+                            <button class="btn btn-sm btn-primary">Connect</button>
+                        </div>
+                        <div class="integration-card">
+                            <div class="integration-icon"><i class="fas fa-paper-plane"></i></div>
+                            <h4>Twilio</h4>
+                            <p>SMS notifications</p>
+                            <span class="integration-status"><i class="fas fa-plus-circle"></i> Not Connected</span>
+                            <button class="btn btn-sm btn-primary">Connect</button>
+                        </div>
+                        <div class="integration-card">
+                            <div class="integration-icon"><i class="fas fa-fire"></i></div>
+                            <h4>Firebase</h4>
+                            <p>Real-time notifications</p>
+                            <span class="integration-status"><i class="fas fa-plus-circle"></i> Not Connected</span>
+                            <button class="btn btn-sm btn-primary">Connect</button>
+                        </div>
+                        <div class="integration-card">
+                            <div class="integration-icon"><i class="fab fa-github"></i></div>
+                            <h4>GitHub</h4>
+                            <p>Project tracking</p>
+                            <span class="integration-status"><i class="fas fa-plus-circle"></i> Not Connected</span>
+                            <button class="btn btn-sm btn-primary">Connect</button>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top:24px">
+                        <div class="card-header">
+                            <h3><i class="fas fa-code"></i> API Settings</h3>
+                        </div>
+                        <div class="api-settings">
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <div class="input-with-copy">
+                                    <input type="text" class="form-input" value="lf_sk_live_abc123def456ghi789" readonly id="apiKey">
+                                    <button class="btn btn-sm btn-outline" id="copyApiKey"><i class="fas fa-copy"></i></button>
+                                    <button class="btn btn-sm btn-outline" id="regenerateApiKey"><i class="fas fa-sync"></i></button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Webhook URL</label>
+                                <input type="url" class="form-input" placeholder="https://your-server.com/webhook" id="webhookUrl">
+                            </div>
+                            <div class="form-group">
+                                <label>API Rate Limit</label>
+                                <select class="form-input" id="apiRateLimit">
+                                    <option>100 requests/minute</option>
+                                    <option selected>500 requests/minute</option>
+                                    <option>1000 requests/minute</option>
+                                    <option>Unlimited</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary">Save API Settings</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audit Log Page -->
+                <div class="page" id="page-auditlog">
+                    <div class="page-header">
+                        <div>
+                            <h1>Audit Log</h1>
+                            <p class="page-subtitle">Track all user activities and system changes.</p>
+                        </div>
+                        <div class="page-actions">
+                            <select class="filter-select" id="auditFilter">
+                                <option value="">All Actions</option>
+                                <option value="create">Created</option>
+                                <option value="update">Updated</option>
+                                <option value="delete">Deleted</option>
+                                <option value="login">Login</option>
+                                <option value="export">Export</option>
+                            </select>
+                            <button class="btn btn-outline"><i class="fas fa-download"></i> Export Log</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>User</th>
+                                        <th>Action</th>
+                                        <th>Module</th>
+                                        <th>Details</th>
+                                        <th>IP Address</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auditLogTable">
+                                    <tr>
+                                        <td>Jun 16, 2024 10:45 AM</td>
+                                        <td><strong>Admin User</strong></td>
+                                        <td><span class="status-badge status-won">Created</span></td>
+                                        <td>Leads</td>
+                                        <td>Created lead Acme Corp (LD-1025)</td>
+                                        <td>192.168.1.100</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Jun 16, 2024 10:30 AM</td>
+                                        <td><strong>Sarah Johnson</strong></td>
+                                        <td><span class="status-badge status-contacted">Updated</span></td>
+                                        <td>Leads</td>
+                                        <td>Changed status of Tech Solutions to "Qualified"</td>
+                                        <td>192.168.1.101</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Jun 16, 2024 10:15 AM</td>
+                                        <td><strong>Mike Chen</strong></td>
+                                        <td><span class="status-badge status-qualified">Logged Call</span></td>
+                                        <td>Communications</td>
+                                        <td>15-min call with Innovate Inc</td>
+                                        <td>192.168.1.102</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Jun 16, 2024 09:45 AM</td>
+                                        <td><strong>Admin User</strong></td>
+                                        <td><span class="status-badge status-new">Login</span></td>
+                                        <td>System</td>
+                                        <td>Successful login</td>
+                                        <td>192.168.1.100</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Jun 15, 2024 05:30 PM</td>
+                                        <td><strong>Emily Davis</strong></td>
+                                        <td><span class="status-badge status-lost">Deleted</span></td>
+                                        <td>Leads</td>
+                                        <td>Deleted lead Test Company (LD-1018)</td>
+                                        <td>192.168.1.103</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Jun 15, 2024 04:15 PM</td>
+                                        <td><strong>Admin User</strong></td>
+                                        <td><span class="status-badge status-proposal">Exported</span></td>
+                                        <td>Reports</td>
+                                        <td>Exported monthly sales report</td>
+                                        <td>192.168.1.100</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-footer">
+                            <span class="table-info">Showing <strong>1-6</strong> of <strong>1,248</strong> entries</span>
+                            <div class="pagination">
+                                <button class="page-btn" disabled><i class="fas fa-chevron-left"></i></button>
+                                <button class="page-btn active">1</button>
+                                <button class="page-btn">2</button>
+                                <button class="page-btn">3</button>
+                                <button class="page-btn">...</button>
+                                <button class="page-btn">125</button>
+                                <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div class="page" id="page-settings">
+                    <div class="page-header">
+                        <div>
+                            <h1>Settings</h1>
+                            <p class="page-subtitle">Manage your application settings and preferences.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-tabs">
+                        <button class="settings-tab active" data-tab="profile">Profile</button>
+                        <button class="settings-tab" data-tab="stages">Stages</button>
+                        <button class="settings-tab" data-tab="notifications">Notifications</button>
+                        <button class="settings-tab" data-tab="appearance">Appearance</button>
+                        <button class="settings-tab" data-tab="security">Security</button>
+                        <button class="settings-tab" data-tab="workflows">Workflows</button>
+                        <button class="settings-tab" data-tab="customfields">Custom Fields</button>
+                        <button class="settings-tab" data-tab="team">Team</button>
+                    </div>
+
+                    <!-- Profile Tab -->
+                    <div class="settings-content active" id="settings-profile">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-user-cog"></i> Profile Settings</h3>
+                            </div>
+                            <div class="settings-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Full Name</label>
+                                        <input type="text" class="form-input" value="Admin User">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Email</label>
+                                        <input type="email" class="form-input" value="admin@company.com">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Phone</label>
+                                        <input type="tel" class="form-input" value="+1 (555) 123-4567">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Role</label>
+                                        <select class="form-input">
+                                            <option selected>Administrator</option>
+                                            <option>Sales Manager</option>
+                                            <option>Sales Executive</option>
+                                            <option>Viewer</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Avatar</label>
+                                    <div class="avatar-upload">
+                                        <div class="avatar-preview">AJ</div>
+                                        <button class="btn btn-sm btn-outline"><i class="fas fa-upload"></i> Upload Photo</button>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stages Tab -->
+                    <div class="settings-content" id="settings-stages">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-layer-group"></i> Lead Pipeline Stages</h3>
+                                <button class="btn btn-sm btn-primary" id="addStageBtn"><i class="fas fa-plus"></i> Add Stage</button>
+                            </div>
+                            <div class="stages-description">
+                                <p><strong>Fixed Stages</strong> are core pipeline stages that cannot be deleted. <strong>Custom Stages</strong> can be added, edited, reordered, and deleted.</p>
+                            </div>
+                            <div class="stages-list" id="stagesList">
+                                <!-- Stages rendered by JS -->
+                            </div>
+                            <div class="stages-legend">
+                                <div class="legend-item"><i class="fas fa-lock"></i> Fixed - Cannot be deleted</div>
+                                <div class="legend-item"><i class="fas fa-grip-vertical"></i> Drag to reorder</div>
+                                <div class="legend-item"><i class="fas fa-arrow-up"></i><i class="fas fa-arrow-down"></i> Use arrows to move</div>
+                            </div>
+                        </div>
+
+                        <div class="card" style="margin-top:20px">
+                            <div class="card-header">
+                                <h3><i class="fas fa-info-circle"></i> Stage Settings</h3>
+                            </div>
+                            <div class="settings-list">
+                                <div class="setting-item">
+                                    <div>
+                                        <strong>Auto-advance stages</strong>
+                                        <p>Automatically move leads to next stage based on activity</p>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div>
+                                        <strong>Stage probability weights</strong>
+                                        <p>Use custom win probability for each stage in forecasting</p>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div>
+                                        <strong>Require notes on stage change</strong>
+                                        <p>Force users to add notes when moving leads between stages</p>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div>
+                                        <strong>Notify on stage change</strong>
+                                        <p>Send notification to assigned executive when lead changes stage</p>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications Tab -->
+                    <div class="settings-content" id="settings-notifications">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-bell"></i> Notification Preferences</h3>
+                            </div>
+                            <div class="settings-list">
+                                <div class="setting-item">
+                                    <div>
+                                        <strong>Email Notifications</strong>
+                                        <p>Receive email alerts for new leads and follow-ups</p>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div>
+                                        <strong>SMS Notifications</strong>
+                                        <p>Get text messages for urgent follow-ups</p>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div>
+                                        <strong>Lead Assignment Alerts</strong>
+                                        <p>Get notified when a lead is assigned to you</p>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div>
+                                        <strong>Follow-Up Reminders</strong>
+                                        <p>Receive reminders for upcoming follow-ups</p>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div>
+                                        <strong>Weekly Reports</strong>
+                                        <p>Get a weekly summary of sales performance</p>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div>
+                                        <strong>Browser Notifications</strong>
+                                        <p>Enable push notifications in browser</p>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Appearance Tab -->
+                    <div class="settings-content" id="settings-appearance">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-palette"></i> Appearance</h3>
+                            </div>
+                            <div class="settings-list">
+                                <div class="setting-item">
+                                    <div><strong>Dark Mode</strong><p>Toggle between light and dark theme</p></div>
+                                    <label class="toggle"><input type="checkbox" id="darkModeToggle"><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div><strong>Compact View</strong><p>Show more data in less space</p></div>
+                                    <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div><strong>Sidebar Auto-collapse</strong><p>Automatically collapse sidebar on smaller screens</p></div>
+                                    <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                                </div>
+                            </div>
+                            <div class="color-picker-section">
+                                <h4>Accent Color</h4>
+                                <div class="color-options">
+                                    <button class="color-option active" style="background:#6366f1" data-color="#6366f1"></button>
+                                    <button class="color-option" style="background:#3b82f6" data-color="#3b82f6"></button>
+                                    <button class="color-option" style="background:#10b981" data-color="#10b981"></button>
+                                    <button class="color-option" style="background:#f59e0b" data-color="#f59e0b"></button>
+                                    <button class="color-option" style="background:#ef4444" data-color="#ef4444"></button>
+                                    <button class="color-option" style="background:#8b5cf6" data-color="#8b5cf6"></button>
+                                    <button class="color-option" style="background:#ec4899" data-color="#ec4899"></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Tab -->
+                    <div class="settings-content" id="settings-security">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-shield-alt"></i> Security Settings</h3>
+                            </div>
+                            <div class="settings-list">
+                                <div class="setting-item">
+                                    <div><strong>Two-Factor Authentication</strong><p>Add an extra layer of security to your account</p></div>
+                                    <label class="toggle"><input type="checkbox" id="twoFactorToggle"><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div><strong>Session Timeout</strong><p>Auto logout after inactivity</p></div>
+                                    <select class="form-input" style="width:auto">
+                                        <option>15 minutes</option>
+                                        <option selected>30 minutes</option>
+                                        <option>1 hour</option>
+                                        <option>4 hours</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item">
+                                    <div><strong>Login Notifications</strong><p>Get notified of new login attempts</p></div>
+                                    <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                                </div>
+                                <div class="setting-item">
+                                    <div><strong>IP Whitelisting</strong><p>Restrict access to specific IP addresses</p></div>
+                                    <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+                                </div>
+                            </div>
+                            <div class="settings-form" style="margin-top:16px">
+                                <h4>Change Password</h4>
+                                <div class="form-group"><label>Current Password</label><input type="password" class="form-input" placeholder="Enter current password"></div>
+                                <div class="form-row">
+                                    <div class="form-group"><label>New Password</label><input type="password" class="form-input" placeholder="Enter new password"></div>
+                                    <div class="form-group"><label>Confirm Password</label><input type="password" class="form-input" placeholder="Confirm new password"></div>
+                                </div>
+                                <button class="btn btn-primary">Update Password</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Workflows Tab -->
+                    <div class="settings-content" id="settings-workflows">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-cogs"></i> Automated Workflows</h3>
+                                <button class="btn btn-sm btn-primary" id="addWorkflowBtn"><i class="fas fa-plus"></i> Add Rule</button>
+                            </div>
+                            <div class="workflows-list" id="workflowsList">
+                                <div class="workflow-item">
+                                    <div class="workflow-info">
+                                        <h4>Auto-assign new leads</h4>
+                                        <p>When lead status is "New", assign to sales executive based on round-robin</p>
+                                    </div>
+                                    <div class="workflow-actions">
+                                        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                                        <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                <div class="workflow-item">
+                                    <div class="workflow-info">
+                                        <h4>Follow-up reminder</h4>
+                                        <p>Send email reminder 1 day before scheduled follow-up</p>
+                                    </div>
+                                    <div class="workflow-actions">
+                                        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                                        <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                <div class="workflow-item">
+                                    <div class="workflow-info">
+                                        <h4>Lead scoring update</h4>
+                                        <p>Update lead score based on email opens and page visits</p>
+                                    </div>
+                                    <div class="workflow-actions">
+                                        <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+                                        <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                <div class="workflow-item">
+                                    <div class="workflow-info">
+                                        <h4>Auto-status update</h4>
+                                        <p>Change status to "Contacted" after first email or call logged</p>
+                                    </div>
+                                    <div class="workflow-actions">
+                                        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+                                        <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Fields Tab -->
+                    <div class="settings-content" id="settings-customfields">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-list-alt"></i> Custom Fields</h3>
+                                <button class="btn btn-sm btn-primary" id="addCustomFieldBtn"><i class="fas fa-plus"></i> Add Field</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Field Name</th>
+                                            <th>Type</th>
+                                            <th>Required</th>
+                                            <th>Visible in List</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="customFieldsTable">
+                                        <tr>
+                                            <td>Industry</td>
+                                            <td>Dropdown</td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td>
+                                                <div class="action-btns">
+                                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                    <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Company Size</td>
+                                            <td>Dropdown</td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td>
+                                                <div class="action-btns">
+                                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                    <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Website URL</td>
+                                            <td>URL</td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td>
+                                                <div class="action-btns">
+                                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                    <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Decision Maker</td>
+                                            <td>Checkbox</td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td>
+                                                <div class="action-btns">
+                                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                    <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Team Tab -->
+                    <div class="settings-content" id="settings-team">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-users"></i> Team Members</h3>
+                                <button class="btn btn-sm btn-primary" id="addTeamMemberBtn"><i class="fas fa-user-plus"></i> Add Member</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                            <th>Last Active</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><div class="user-cell"><div class="user-avatar-sm bg-pink">AJ</div> Admin User</div></td>
+                                            <td>admin@company.com</td>
+                                            <td><span class="role-badge admin">Admin</span></td>
+                                            <td><span class="status-badge status-won">Active</span></td>
+                                            <td>Just now</td>
+                                            <td><button class="action-btn" disabled><i class="fas fa-edit"></i></button></td>
+                                        </tr>
+                                        <tr>
+                                            <td><div class="user-cell"><div class="user-avatar-sm bg-blue">SJ</div> Sarah Johnson</div></td>
+                                            <td>sarah@company.com</td>
+                                            <td><span class="role-badge manager">Sales Manager</span></td>
+                                            <td><span class="status-badge status-won">Active</span></td>
+                                            <td>5 min ago</td>
+                                            <td>
+                                                <div class="action-btns">
+                                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                    <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><div class="user-cell"><div class="user-avatar-sm bg-green">MC</div> Mike Chen</div></td>
+                                            <td>mike@company.com</td>
+                                            <td><span class="role-badge executive">Sales Executive</span></td>
+                                            <td><span class="status-badge status-won">Active</span></td>
+                                            <td>1 hour ago</td>
+                                            <td>
+                                                <div class="action-btns">
+                                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                    <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><div class="user-cell"><div class="user-avatar-sm bg-purple">ED</div> Emily Davis</div></td>
+                                            <td>emily@company.com</td>
+                                            <td><span class="role-badge executive">Sales Executive</span></td>
+                                            <td><span class="status-badge status-won">Active</span></td>
+                                            <td>3 hours ago</td>
+                                            <td>
+                                                <div class="action-btns">
+                                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                    <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><div class="user-cell"><div class="user-avatar-sm bg-orange">JW</div> James Wilson</div></td>
+                                            <td>james@company.com</td>
+                                            <td><span class="role-badge executive">Sales Executive</span></td>
+                                            <td><span class="status-badge status-contacted">Inactive</span></td>
+                                            <td>2 days ago</td>
+                                            <td>
+                                                <div class="action-btns">
+                                                    <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                                    <button class="action-btn danger"><i class="fas fa-trash"></i></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="card" style="margin-top:24px">
+                            <div class="card-header">
+                                <h3><i class="fas fa-shield-alt"></i> Roles & Permissions</h3>
+                            </div>
+                            <div class="roles-table">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Role</th>
+                                            <th>View Leads</th>
+                                            <th>Create/Edit</th>
+                                            <th>Assign</th>
+                                            <th>Convert</th>
+                                            <th>Reports</th>
+                                            <th>Settings</th>
+                                            <th>Export</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><span class="role-badge admin">Admin</span></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="role-badge manager">Sales Manager</span></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="role-badge executive">Sales Executive</span></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="role-badge viewer">Viewer</span></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td><i class="fas fa-check text-green"></i></td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                            <td><i class="fas fa-times text-red"></i></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Lead Modal -->
+    <div class="modal-overlay" id="leadModal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 id="modalTitle">New Lead</h2>
+                <button class="modal-close" id="closeLeadModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="leadForm">
+                    <div class="form-row">
+                        <div class="form-group"><label>Lead No</label><input type="text" class="form-input" id="leadNo" readonly></div>
+                        <div class="form-group"><label>Company Name *</label><input type="text" class="form-input" id="companyName" required></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Contact Person *</label><input type="text" class="form-input" id="contactPerson" required></div>
+                        <div class="form-group"><label>Mobile Number *</label><input type="tel" class="form-input" id="mobileNumber" required></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Email</label><input type="email" class="form-input" id="leadEmail"></div>
+                        <div class="form-group"><label>Lead Source</label>
+                            <select class="form-input" id="leadSource">
+                                <option value="website">Website</option><option value="referral">Referral</option><option value="ads">Ads</option><option value="social">Social Media</option><option value="cold-call">Cold Call</option><option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Estimated Budget</label><input type="number" class="form-input" id="leadBudget" placeholder="$0"></div>
+                        <div class="form-group"><label>Priority</label>
+                            <select class="form-input" id="leadPriority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Assigned To</label>
+                            <select class="form-input" id="leadAssigned"><option value="">Select Executive</option><option value="sarah">Sarah Johnson</option><option value="mike">Mike Chen</option><option value="emily">Emily Davis</option><option value="james">James Wilson</option></select>
+                        </div>
+                        <div class="form-group"><label>Status</label>
+                            <select class="form-input" id="leadStatus">
+                                <option value="new">New Lead</option><option value="contacted">Contacted</option><option value="qualified">Qualified</option><option value="proposal">Proposal Sent</option><option value="negotiation">Negotiation</option><option value="won">Won</option><option value="lost">Lost</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group full-width"><label>Description</label><textarea class="form-input textarea" id="leadDescription" rows="3"></textarea></div>
+                    <div class="form-group full-width"><label>Requirement</label><textarea class="form-input textarea" id="leadRequirement" rows="3"></textarea></div>
+
+                    <!-- Custom Fields Section -->
+                    <div class="form-divider"><span>Custom Fields</span></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Industry</label>
+                            <select class="form-input" id="customIndustry"><option value="">Select</option><option>Technology</option><option>Finance</option><option>Healthcare</option><option>Manufacturing</option><option>Retail</option></select>
+                        </div>
+                        <div class="form-group"><label>Company Size</label>
+                            <select class="form-input" id="customSize"><option value="">Select</option><option>1-10</option><option>11-50</option><option>51-200</option><option>201-1000</option><option>1000+</option></select>
+                        </div>
+                    </div>
+                    <div class="form-group full-width"><label>Website URL</label><input type="url" class="form-input" id="customWebsite" placeholder="https://"></div>
+
+                    <!-- Document Attachments -->
+                    <div class="form-divider"><span>Attachments</span></div>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Drag & drop files here or <span class="file-browse">browse</span></p>
+                        <span class="file-hint">Supports PDF, DOC, XLS, JPG, PNG (Max 10MB)</span>
+                    </div>
+                    <div class="uploaded-files" id="uploadedFiles"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelLead">Cancel</button>
+                <button class="btn btn-primary" id="saveLead"><i class="fas fa-save"></i> Save Lead</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Follow-Up Modal -->
+    <div class="modal-overlay" id="followUpModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>New Follow-Up</h2>
+                <button class="modal-close" id="closeFollowUpModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="followUpForm">
+                    <div class="form-row">
+                        <div class="form-group"><label>Lead *</label><select class="form-input" id="fuLead" required><option value="">Select Lead</option></select></div>
+                        <div class="form-group"><label>Follow-Up Type *</label><select class="form-input" id="fuType" required><option value="call">Call</option><option value="meeting">Meeting</option><option value="email">Email</option></select></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Follow-Up Date *</label><input type="date" class="form-input" id="fuDate" required></div>
+                        <div class="form-group"><label>Next Follow-Up</label><input type="date" class="form-input" id="fuNextDate"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Outcome</label><select class="form-input" id="fuOutcome"><option value="pending">Pending</option><option value="positive">Positive</option><option value="negative">Negative</option></select></div>
+                        <div class="form-group"><label>Priority</label><select class="form-input" id="fuPriority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
+                    </div>
+                    <div class="form-group full-width"><label>Discussion Notes</label><textarea class="form-input textarea" id="fuNotes" rows="4"></textarea></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelFollowUp">Cancel</button>
+                <button class="btn btn-primary" id="saveFollowUp"><i class="fas fa-save"></i> Save Follow-Up</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lead Detail Modal -->
+    <div class="modal-overlay" id="leadDetailModal">
+        <div class="modal modal-xl">
+            <div class="modal-header">
+                <h2 id="detailLeadTitle">Lead Details</h2>
+                <button class="modal-close" id="closeDetailModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid">
+                    <div class="detail-section">
+                        <h4>Lead Information</h4>
+                        <div class="detail-fields" id="detailFields"></div>
+                    </div>
+                    <div class="detail-section">
+                        <h4>Communication History</h4>
+                        <div class="timeline" id="detailTimeline"></div>
+                    </div>
+                </div>
+                <!-- Lead Notes -->
+                <div class="detail-section" style="margin-top:24px">
+                    <h4>Internal Notes</h4>
+                    <div class="notes-container" id="leadNotes">
+                        <div class="note-item">
+                            <div class="note-header"><strong>Admin User</strong><span>2 hours ago</span></div>
+                            <p>Follow up on pricing discussion. Client interested in enterprise package.</p>
+                        </div>
+                        <div class="note-item">
+                            <div class="note-header"><strong>Sarah Johnson</strong><span>Yesterday</span></div>
+                            <p>Initial meeting went well. They need a demo before end of month.</p>
+                        </div>
+                    </div>
+                    <div class="add-note">
+                        <textarea class="form-input textarea" placeholder="Add a note..." id="newNoteText"></textarea>
+                        <button class="btn btn-sm btn-primary" id="addNoteBtn"><i class="fas fa-plus"></i> Add Note</button>
+                    </div>
+                </div>
+                <!-- Activity Log -->
+                <div class="detail-section" style="margin-top:24px">
+                    <h4>Activity Log</h4>
+                    <div class="activity-log" id="activityLog">
+                        <div class="activity-item"><div class="activity-dot bg-blue"></div><div class="activity-content"><span>Status changed to "Qualified"</span><span class="activity-time">Today 10:30 AM</span></div></div>
+                        <div class="activity-item"><div class="activity-dot bg-green"></div><div class="activity-content"><span>Follow-up completed</span><span class="activity-time">Today 9:00 AM</span></div></div>
+                        <div class="activity-item"><div class="activity-dot bg-purple"></div><div class="activity-content"><span>Lead assigned to Sarah Johnson</span><span class="activity-time">Yesterday</span></div></div>
+                        <div class="activity-item"><div class="activity-dot bg-cyan"></div><div class="activity-content"><span>Lead created</span><span class="activity-time">Jun 14, 2024</span></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="editFromDetail"><i class="fas fa-edit"></i> Edit</button>
+                <button class="btn btn-success" id="convertLead"><i class="fas fa-exchange-alt"></i> Convert to Customer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Leads Modal -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Import Leads</h2>
+                <button class="modal-close" onclick="App.closeModal('importModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="import-options">
+                    <h4>Import from</h4>
+                    <div class="import-source-grid">
+                        <div class="import-source active"><i class="fas fa-file-csv"></i><span>CSV File</span></div>
+                        <div class="import-source"><i class="fas fa-file-excel"></i><span>Excel File</span></div>
+                        <div class="import-source"><i class="fab fa-google"></i><span>Google Sheets</span></div>
+                        <div class="import-source"><i class="fas fa-plug"></i><span>CRM Import</span></div>
+                    </div>
+                </div>
+                <div class="file-upload-area" style="margin-top:20px">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag & drop your file here or <span class="file-browse">browse</span></p>
+                    <span class="file-hint">Supports CSV, XLS, XLSX (Max 5MB, 10,000 rows)</span>
+                </div>
+                <div class="import-mapping" style="margin-top:20px">
+                    <h4>Column Mapping</h4>
+                    <div class="mapping-row"><span>CSV Column</span><span>Maps to</span></div>
+                    <div class="mapping-row"><select class="form-input"><option>Company Name</option></select><i class="fas fa-arrow-right"></i><select class="form-input"><option>Company Name</option></select></div>
+                    <div class="mapping-row"><select class="form-input"><option>Contact</option></select><i class="fas fa-arrow-right"></i><select class="form-input"><option>Contact Person</option></select></div>
+                    <div class="mapping-row"><select class="form-input"><option>Email</option></select><i class="fas fa-arrow-right"></i><select class="form-input"><option>Email</option></select></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('importModal')">Cancel</button>
+                <button class="btn btn-primary"><i class="fas fa-file-import"></i> Import Leads</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Leads Modal -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Export Leads</h2>
+                <button class="modal-close" onclick="App.closeModal('exportModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label>Export Format</label>
+                    <div class="export-formats">
+                        <label class="export-option active"><input type="radio" name="exportFormat" value="csv" checked><i class="fas fa-file-csv"></i><span>CSV</span></label>
+                        <label class="export-option"><input type="radio" name="exportFormat" value="excel"><i class="fas fa-file-excel"></i><span>Excel</span></label>
+                        <label class="export-option"><input type="radio" name="exportFormat" value="pdf"><i class="fas fa-file-pdf"></i><span>PDF</span></label>
+                    </div>
+                </div>
+                <div class="form-group"><label>Filters</label>
+                    <select class="form-input"><option>All Leads</option><option>My Leads Only</option><option>Current View</option><option>Selected Leads</option></select>
+                </div>
+                <div class="form-group"><label>Columns to Export</label>
+                    <div class="export-columns">
+                        <label class="checkbox-label"><input type="checkbox" checked> Lead No</label>
+                        <label class="checkbox-label"><input type="checkbox" checked> Company</label>
+                        <label class="checkbox-label"><input type="checkbox" checked> Contact</label>
+                        <label class="checkbox-label"><input type="checkbox" checked> Email</label>
+                        <label class="checkbox-label"><input type="checkbox" checked> Phone</label>
+                        <label class="checkbox-label"><input type="checkbox" checked> Status</label>
+                        <label class="checkbox-label"><input type="checkbox" checked> Priority</label>
+                        <label class="checkbox-label"><input type="checkbox" checked> Budget</label>
+                        <label class="checkbox-label"><input type="checkbox"> Source</label>
+                        <label class="checkbox-label"><input type="checkbox"> Assigned To</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('exportModal')">Cancel</button>
+                <button class="btn btn-primary"><i class="fas fa-download"></i> Export</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Email Modal -->
+    <div class="modal-overlay" id="emailModal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2>Send Email</h2>
+                <button class="modal-close" onclick="App.closeModal('emailModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group"><label>To *</label><input type="email" class="form-input" placeholder="recipient@example.com" id="emailTo"></div>
+                    <div class="form-group"><label>Lead</label><select class="form-input" id="emailLead"><option value="">Link to Lead</option></select></div>
+                </div>
+                <div class="form-group"><label>Subject *</label><input type="text" class="form-input" placeholder="Email subject" id="emailSubject"></div>
+                <div class="form-group"><label>Template</label>
+                    <select class="form-input" id="emailTemplate"><option value="">No Template</option><option>Follow-Up</option><option>Proposal</option><option>Thank You</option><option>Meeting Request</option></select>
+                </div>
+                <div class="form-group"><label>Message *</label><textarea class="form-input textarea" rows="8" placeholder="Write your message..." id="emailBody"></textarea></div>
+                <div class="form-group"><label>Attachments</label>
+                    <div class="file-upload-area small"><i class="fas fa-paperclip"></i> <span class="file-browse">Add files</span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('emailModal')">Cancel</button>
+                <button class="btn btn-outline"><i class="fas fa-save"></i> Save Draft</button>
+                <button class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Email</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send SMS Modal -->
+    <div class="modal-overlay" id="smsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Send SMS</h2>
+                <button class="modal-close" onclick="App.closeModal('smsModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label>To *</label><input type="tel" class="form-input" placeholder="+1 (555) 123-4567" id="smsTo"></div>
+                <div class="form-group"><label>Lead</label><select class="form-input" id="smsLead"><option value="">Link to Lead</option></select></div>
+                <div class="form-group"><label>Message *</label><textarea class="form-input textarea" rows="4" placeholder="Type your message..." id="smsBody" maxlength="160"></textarea>
+                    <span class="char-count"><span id="charCount">0</span>/160</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('smsModal')">Cancel</button>
+                <button class="btn btn-primary"><i class="fas fa-sms"></i> Send SMS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Call Modal -->
+    <div class="modal-overlay" id="callModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Log Call</h2>
+                <button class="modal-close" onclick="App.closeModal('callModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group"><label>Lead *</label><select class="form-input" id="callLead" required><option value="">Select Lead</option></select></div>
+                    <div class="form-group"><label>Call Type</label><select class="form-input"><option>Inbound</option><option>Outbound</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Date *</label><input type="date" class="form-input" id="callDate"></div>
+                    <div class="form-group"><label>Duration (minutes)</label><input type="number" class="form-input" placeholder="0" id="callDuration"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Outcome</label><select class="form-input"><option>Connected</option><option>No Answer</option><option>Voicemail</option><option>Busy</option><option>Wrong Number</option></select></div>
+                    <div class="form-group"><label>Next Action</label><select class="form-input"><option>None</option><option>Follow-Up</option><option>Send Email</option><option>Schedule Meeting</option></select></div>
+                </div>
+                <div class="form-group"><label>Notes</label><textarea class="form-input textarea" rows="4" placeholder="Call notes..." id="callNotes"></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('callModal')">Cancel</button>
+                <button class="btn btn-primary"><i class="fas fa-save"></i> Save Call Log</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Meeting Modal -->
+    <div class="modal-overlay" id="meetingModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Schedule Meeting</h2>
+                <button class="modal-close" onclick="App.closeModal('meetingModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label>Subject *</label><input type="text" class="form-input" placeholder="Meeting subject" id="meetingSubject"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Lead *</label><select class="form-input" id="meetingLead"><option value="">Select Lead</option></select></div>
+                    <div class="form-group"><label>Meeting Type</label><select class="form-input"><option>Video Call</option><option>In-Person</option><option>Phone Call</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Date *</label><input type="date" class="form-input" id="meetingDate"></div>
+                    <div class="form-group"><label>Time *</label><input type="time" class="form-input" id="meetingTime"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Duration</label><select class="form-input"><option>15 min</option><option selected>30 min</option><option>45 min</option><option>1 hour</option><option>2 hours</option></select></div>
+                    <div class="form-group"><label>Location / Link</label><input type="text" class="form-input" placeholder="Meeting link or location" id="meetingLocation"></div>
+                </div>
+                <div class="form-group"><label>Agenda</label><textarea class="form-input textarea" rows="3" placeholder="Meeting agenda..." id="meetingAgenda"></textarea></div>
+                <div class="form-group">
+                    <label class="checkbox-label"><input type="checkbox" checked> Send calendar invite</label>
+                    <label class="checkbox-label"><input type="checkbox" checked> Send reminder 1 hour before</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('meetingModal')">Cancel</button>
+                <button class="btn btn-primary"><i class="fas fa-calendar-plus"></i> Schedule Meeting</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Goal Edit Modal -->
+    <div class="modal-overlay" id="goalModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Edit Goals</h2>
+                <button class="modal-close" onclick="App.closeModal('goalModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label>Monthly Leads Target</label><input type="number" class="form-input" value="200" id="goalLeads"></div>
+                <div class="form-group"><label>Revenue Target ($)</label><input type="number" class="form-input" value="2000000" id="goalRevenue"></div>
+                <div class="form-group"><label>Conversion Rate Target (%)</label><input type="number" class="form-input" value="30" id="goalConversion"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('goalModal')">Cancel</button>
+                <button class="btn btn-primary"><i class="fas fa-save"></i> Save Goals</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Document Modal -->
+    <div class="modal-overlay" id="uploadDocModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Upload Document</h2>
+                <button class="modal-close" onclick="App.closeModal('uploadDocModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="file-upload-area"><i class="fas fa-cloud-upload-alt"></i><p>Drag & drop files or <span class="file-browse">browse</span></p><span class="file-hint">Max file size: 25MB</span></div>
+                <div class="form-group" style="margin-top:16px"><label>Link to Lead</label><select class="form-input"><option value="">Select Lead</option></select></div>
+                <div class="form-group"><label>Category</label><select class="form-input"><option>Proposal</option><option>Contract</option><option>Invoice</option><option>Quote</option><option>Other</option></select></div>
+                <div class="form-group"><label>Description</label><textarea class="form-input textarea" rows="2" placeholder="Optional description"></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('uploadDocModal')">Cancel</button>
+                <button class="btn btn-primary"><i class="fas fa-upload"></i> Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stage Modal -->
+    <div class="modal-overlay" id="stageModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="stageModalTitle">Add New Stage</h2>
+                <button class="modal-close" onclick="App.closeModal('stageModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editStageId">
+                <div class="form-group">
+                    <label>Stage Name *</label>
+                    <input type="text" class="form-input" id="stageName" placeholder="Enter stage name" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Color</label>
+                        <div class="color-picker-row">
+                            <input type="color" class="form-input color-input" id="stageColor" value="#6366f1">
+                            <div class="color-presets">
+                                <button type="button" class="color-preset" style="background:#06b6d4" onclick="document.getElementById('stageColor').value='#06b6d4'"></button>
+                                <button type="button" class="color-preset" style="background:#3b82f6" onclick="document.getElementById('stageColor').value='#3b82f6'"></button>
+                                <button type="button" class="color-preset" style="background:#8b5cf6" onclick="document.getElementById('stageColor').value='#8b5cf6'"></button>
+                                <button type="button" class="color-preset" style="background:#f97316" onclick="document.getElementById('stageColor').value='#f97316'"></button>
+                                <button type="button" class="color-preset" style="background:#f59e0b" onclick="document.getElementById('stageColor').value='#f59e0b'"></button>
+                                <button type="button" class="color-preset" style="background:#10b981" onclick="document.getElementById('stageColor').value='#10b981'"></button>
+                                <button type="button" class="color-preset" style="background:#ef4444" onclick="document.getElementById('stageColor').value='#ef4444'"></button>
+                                <button type="button" class="color-preset" style="background:#ec4899" onclick="document.getElementById('stageColor').value='#ec4899'"></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Icon</label>
+                        <select class="form-input" id="stageIcon">
+                            <option value="fas fa-flag">Flag</option>
+                            <option value="fas fa-bolt">Bolt</option>
+                            <option value="fas fa-star">Star</option>
+                            <option value="fas fa-fire">Fire</option>
+                            <option value="fas fa-gem">Gem</option>
+                            <option value="fas fa-rocket">Rocket</option>
+                            <option value="fas fa-bullseye">Bullseye</option>
+                            <option value="fas fa-heart">Heart</option>
+                            <option value="fas fa-diamond">Diamond</option>
+                            <option value="fas fa-crown">Crown</option>
+                            <option value="fas fa-award">Award</option>
+                            <option value="fas fa-coins">Coins</option>
+                            <option value="fas fa-chart-line">Chart</option>
+                            <option value="fas fa-handshake">Handshake</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="stage-preview">
+                    <label>Preview</label>
+                    <div class="stage-preview-card">
+                        <div class="stage-preview-dot" id="stagePreviewDot"></div>
+                        <span id="stagePreviewName">New Stage</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="App.closeModal('stageModal')">Cancel</button>
+                <button class="btn btn-primary" id="saveStageBtn"><i class="fas fa-save"></i> Save Stage</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="app.js"></script>
+</body>
+</html>
